@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小恐龍遊戲</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fira+Code:wght@400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Press Start 2P', monospace;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* ── 左側程式碼面板 ── */
+        #code-panel {
+            width: 340px;
+            height: 70vh;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: -6px 0 40px #00000099;
+            flex-shrink: 0;
+        }
+
+        #code-titlebar {
+            background: #161b22;
+            padding: 9px 14px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            border-bottom: 1px solid #21262d;
+            flex-shrink: 0;
+        }
+
+        .dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .dot-r {
+            background: #ff5f57;
+        }
+
+        .dot-y {
+            background: #febc2e;
+        }
+
+        .dot-g {
+            background: #28c840;
+        }
+
+        #code-filename {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            color: #484f58;
+            margin-left: 8px;
+        }
+
+        #exec-badge {
+            margin-left: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.55rem;
+            color: #3fb950;
+            background: #1a2a1a;
+            border: 1px solid #2a4a2a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            animation: badge-blink 1s step-end infinite;
+        }
+
+        @keyframes badge-blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        #code-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: #0d1117;
+        }
+
+        #code-lines {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+            line-height: 1.72;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 0 4px 0;
+        }
+
+        .cl {
+            display: flex;
+            align-items: flex-start;
+            padding: 0 8px;
+            border-left: 2px solid transparent;
+            transition: all 0.12s;
+            white-space: pre;
+        }
+
+        .cl.active {
+            background: rgba(63, 185, 80, 0.08);
+            border-left-color: #3fb950;
+        }
+
+        .cl.error {
+            background: rgba(248, 81, 73, 0.12);
+            border-left-color: #f85149;
+        }
+
+        .cl.error .lnum {
+            color: #9a4040;
+        }
+
+        .lnum {
+            color: #30363d;
+            min-width: 26px;
+            text-align: right;
+            margin-right: 12px;
+            font-size: 0.62rem;
+            padding-top: 1px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .cl.active .lnum {
+            color: #484f58;
+        }
+
+        .ct {
+            flex: 1;
+        }
+
+        /* syntax */
+        .kw {
+            color: #ff7b72;
+        }
+
+        .fn {
+            color: #d2a8ff;
+        }
+
+        .vr {
+            color: #e6edf3;
+        }
+
+        .nm {
+            color: #79c0ff;
+        }
+
+        .st {
+            color: #a5d6ff;
+        }
+
+        .op {
+            color: #ff7b72;
+        }
+
+        .cm {
+            color: #8b949e;
+            font-style: italic;
+        }
+
+        .pk {
+            color: #e6edf3;
+        }
+
+        .pp {
+            color: #ffa657;
+        }
+
+        /* 底部狀態列 */
+        #code-footer {
+            background: #161b22;
+            border-top: 1px solid #21262d;
+            padding: 6px 14px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.6rem;
+            color: #484f58;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        #cur-fn {
+            color: #d2a8ff;
+        }
+
+        /* ── 右側遊戲區 ── */
+        #game-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            background: #f7f7f7;
+            border-radius: 0 10px 10px 0;
+            overflow: hidden;
+            box-shadow: 6px 0 40px #00000099;
+        }
+
+        #game-header {
+            width: 100%;
+            background: #f7f7f7;
+            padding: 10px 20px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #game-title {
+            font-size: 0.6rem;
+            color: #535353;
+            letter-spacing: 0.08em;
+        }
+
+        #scoreboard {
+            font-size: 0.6rem;
+            color: #535353;
+            text-align: right;
+            line-height: 1.8;
+        }
+
+        #scoreboard .val {
+            color: #535353;
+        }
+
+        #game-wrapper {
+            position: relative;
+            margin: 0;
+        }
+
+        canvas {
+            display: block;
+            background: #f7f7f7;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(247, 247, 247, 0.92);
+            gap: 16px;
+        }
+
+        #overlay h2 {
+            font-size: 0.85rem;
+            color: #535353;
+        }
+
+        #overlay p {
+            font-size: 0.42rem;
+            color: #888;
+            line-height: 2.2;
+            text-align: center;
+        }
+
+        .gbtn {
+            padding: 10px 22px;
+            background: transparent;
+            border: 2px solid #535353;
+            color: #535353;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .gbtn:hover {
+            background: #535353;
+            color: #f7f7f7;
+        }
+
+        #hint {
+            font-size: 0.36rem;
+            color: #aaa;
+            padding: 8px 0 10px;
+            letter-spacing: 0.08em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── 左側程式碼面板 ── -->
+    <div id="code-panel">
+        <div id="code-titlebar">
+            <div class="dot dot-r"></div>
+            <div class="dot dot-y"></div>
+            <div class="dot dot-g"></div>
+            <span id="code-filename">dino.js</span>
+            <span id="exec-badge">▶ RUN</span>
+        </div>
+        <div id="code-body">
+            <div id="code-lines"></div>
+        </div>
+        <div id="code-footer">
+            <span>執行中：</span><span id="cur-fn">idle</span>
+        </div>
+    </div>
+
+    <!-- ── 右側遊戲區 ── -->
+    <div id="game-col">
+        <div id="game-header">
+            <span id="game-title">🦕 小恐龍</span>
+            <div id="scoreboard">
+                HI <span class="val" id="best">00000</span>
+                &nbsp;
+                <span class="val" id="score">00000</span>
+            </div>
+        </div>
+        <div id="game-wrapper">
+            <canvas id="c" width="600" height="200"></canvas>
+            <div id="overlay">
+                <h2>🦕</h2>
+                <p>按空白鍵 / ↑ 跳躍<br>按 ↓ 蹲下</p>
+                <button class="gbtn" id="start-btn">開始遊戲</button>
+            </div>
+        </div>
+        <div id="hint">空白 / ↑ 跳躍 &nbsp;·&nbsp; ↓ 蹲下</div>
+    </div>
+
+    <script>
+        // ══════════════════════════════════
+        //  程式碼面板
+        // ══════════════════════════════════
+        const codeLines = document.getElementById('code-lines');
+        const curFnEl = document.getElementById('cur-fn');
+        const MAX_LINES = 20;
+        let displayedLines = [];
+
+        // 程式碼片段資料庫
+        const BLOCKS = {
+            init: [
+                ['<kw>function</kw> <fn>init</fn><pk>()</pk> <pk>{</pk>', 1],
+                ['  dino.y <op>=</op> GROUND<pk>;</pk>', 2],
+                ['  dino.vy <op>=</op> <nm>0</nm><pk>;</pk>', 3],
+                ['  obstacles <op>=</op> <pk>[]</pk><pk>;</pk>', 4],
+                ['  speed <op>=</op> <nm>5</nm><pk>;</pk>', 5],
+                ['  score <op>=</op> <nm>0</nm><pk>;</pk>', 6],
+                ['  running <op>=</op> <kw>true</kw><pk>;</pk>', 7],
+                ['<pk>}</pk>', 8],
+            ],
+            gameLoop: [
+                ['<kw>function</kw> <fn>gameLoop</fn><pk>(</pk>ts<pk>)</pk> <pk>{</pk>', 9],
+                ['  <fn>update</fn><pk>()</pk><pk>;</pk>', 10],
+                ['  <fn>draw</fn><pk>()</pk><pk>;</pk>', 11],
+                ['  score <op>+=</op> speed <op>*</op> <nm>0.1</nm><pk>;</pk>', 12],
+                ['  <fn>requestAnimationFrame</fn><pk>(</pk>gameLoop<pk>)</pk><pk>;</pk>', 13],
+                ['<pk>}</pk>', 14],
+            ],
+            update: [
+                ['<kw>function</kw> <fn>update</fn><pk>()</pk> <pk>{</pk>', 15],
+                ['  <cm>// 重力</cm>', 16],
+                ['  dino.vy <op>+=</op> GRAVITY<pk>;</pk>', 17],
+                ['  dino.y  <op>+=</op> dino.vy<pk>;</pk>', 18],
+                ['  <kw>if</kw> <pk>(</pk>dino.y <op>&gt;=</op> GROUND<pk>)</pk> <pk>{</pk>', 19],
+                ['    dino.y <op>=</op> GROUND<pk>;</pk>', 20],
+                ['    dino.vy <op>=</op> <nm>0</nm><pk>;</pk>', 21],
+                ['    onGround <op>=</op> <kw>true</kw><pk>;</pk>', 22],
+                ['  <pk>}</pk>', 23],
+                ['<pk>}</pk>', 24],
+            ],
+            spawnObstacle: [
+                ['<kw>function</kw> <fn>spawnObstacle</fn><pk>()</pk> <pk>{</pk>', 25],
+                ['  <kw>const</kw> <vr>type</vr> <op>=</op> Math.<fn>random</fn><pk>()</pk>', 26],
+                ['    <op>&lt;</op> <nm>0.3</nm> <op>?</op> <st>"pterodactyl"</st> <op>:</op> <st>"cactus"</st><pk>;</pk>', 27],
+                ['  obstacles.<fn>push</fn><pk>({</pk>', 28],
+                ['    x<op>:</op> <nm>620</nm><pk>,</pk> type<pk>,</pk>', 29],
+                ['    w<op>:</op> getWidth<pk>(</pk>type<pk>),</pk>', 30],
+                ['    h<op>:</op> getHeight<pk>(</pk>type<pk>)</pk>', 31],
+                ['  <pk>})</pk><pk>;</pk>', 32],
+                ['<pk>}</pk>', 33],
+            ],
+            moveObstacles: [
+                ['<cm>// 移動所有障礙物</cm>', 34],
+                ['obstacles <op>=</op> obstacles', 35],
+                ['  .<fn>map</fn><pk>(</pk>o <op>=&gt;</op> <pk>({</pk>', 36],
+                ['    <op>...</op>o<pk>,</pk> x<op>:</op> o.x <op>-</op> speed', 37],
+                ['  <pk>}))</pk>', 38],
+                ['  .<fn>filter</fn><pk>(</pk>o <op>=&gt;</op> o.x <op>&gt;</op> <nm>-50</nm><pk>)</pk><pk>;</pk>', 39],
+            ],
+            checkCollision: [
+                ['<kw>function</kw> <fn>checkCollision</fn><pk>()</pk> <pk>{</pk>', 40],
+                ['  <kw>for</kw> <pk>(</pk><kw>const</kw> o <kw>of</kw> obstacles<pk>)</pk> <pk>{</pk>', 41],
+                ['    <kw>if</kw> <pk>(</pk><fn>overlaps</fn><pk>(</pk>dino<pk>,</pk> o<pk>))</pk> <pk>{</pk>', 42],
+                ['      <fn>gameOver</fn><pk>()</pk><pk>;</pk>', 43],
+                ['      <kw>return</kw><pk>;</pk>', 44],
+                ['    <pk>}</pk>', 45],
+                ['  <pk>}</pk>', 46],
+                ['<pk>}</pk>', 47],
+            ],
+            jump: [
+                ['<kw>function</kw> <fn>jump</fn><pk>()</pk> <pk>{</pk>', 48],
+                ['  <kw>if</kw> <pk>(</pk>onGround<pk>)</pk> <pk>{</pk>', 49],
+                ['    dino.vy <op>=</op> JUMP_FORCE<pk>;</pk>', 50],
+                ['    onGround <op>=</op> <kw>false</kw><pk>;</pk>', 51],
+                ['    <fn>playSound</fn><pk>(</pk><st>"jump"</st><pk>)</pk><pk>;</pk>', 52],
+                ['  <pk>}</pk>', 53],
+                ['<pk>}</pk>', 54],
+            ],
+            duck: [
+                ['<kw>function</kw> <fn>duck</fn><pk>(</pk>isDucking<pk>)</pk> <pk>{</pk>', 55],
+                ['  dino.ducking <op>=</op> isDucking<pk>;</pk>', 56],
+                ['  dino.h <op>=</op> isDucking', 57],
+                ['    <op>?</op> DUCK_H <op>:</op> STAND_H<pk>;</pk>', 58],
+                ['<pk>}</pk>', 59],
+            ],
+            draw: [
+                ['<kw>function</kw> <fn>draw</fn><pk>()</pk> <pk>{</pk>', 60],
+                ['  ctx.<fn>clearRect</fn><pk>(</pk><nm>0</nm><pk>,</pk><nm>0</nm><pk>,</pk>W<pk>,</pk>H<pk>)</pk><pk>;</pk>', 61],
+                ['  <fn>drawGround</fn><pk>()</pk><pk>;</pk>', 62],
+                ['  <fn>drawDino</fn><pk>(</pk>dino<pk>)</pk><pk>;</pk>', 63],
+                ['  obstacles.<fn>forEach</fn><pk>(</pk>o <op>=&gt;</op>', 64],
+                ['    <fn>drawObstacle</fn><pk>(</pk>o<pk>)</pk><pk>)</pk><pk>;</pk>', 65],
+                ['  <fn>drawScore</fn><pk>()</pk><pk>;</pk>', 66],
+                ['<pk>}</pk>', 67],
+            ],
+            gameOver: [
+                ['<kw>function</kw> <fn>gameOver</fn><pk>()</pk> <pk>{</pk>', 68],
+                ['  running <op>=</op> <kw>false</kw><pk>;</pk>', 69],
+                ['  <kw>if</kw> <pk>(</pk>score <op>&gt;</op> best<pk>)</pk>', 70],
+                ['    best <op>=</op> score<pk>;</pk>', 71],
+                ['  <fn>showOverlay</fn><pk>()</pk><pk>;</pk>', 72],
+                ['<pk>}</pk>', 73],
+            ],
+            state: [
+                ['<cm>// ── 遊戲狀態 ──</cm>', 74],
+                ['dino.y  <op>=</op> <nm id="sv-y">120</nm>', 75],
+                ['dino.vy <op>=</op> <nm id="sv-vy">0</nm>', 76],
+                ['onGround <op>=</op> <kw id="sv-grnd">true</kw>', 77],
+                ['speed   <op>=</op> <nm id="sv-spd">5.0</nm>', 78],
+                ['score   <op>=</op> <nm id="sv-sc">0</nm>', 79],
+                ['obstacles.length <op>=</op> <nm id="sv-obs">0</nm>', 80],
+            ],
+        };
+
+        function htmlLine(tpl) {
+            return tpl
+                .replace(/<kw>(.*?)<\/kw>/g, '<span class="kw">$1</span>')
+                .replace(/<fn>(.*?)<\/fn>/g, '<span class="fn">$1</span>')
+                .replace(/<vr>(.*?)<\/vr>/g, '<span class="vr">$1</span>')
+                .replace(/<nm(.*?)>(.*?)<\/nm>/g, '<span class="nm"$1>$2</span>')
+                .replace(/<st>(.*?)<\/st>/g, '<span class="st">$1</span>')
+                .replace(/<op>(.*?)<\/op>/g, '<span class="op">$1</span>')
+                .replace(/<cm>(.*?)<\/cm>/g, '<span class="cm">$1</span>')
+                .replace(/<pk>(.*?)<\/pk>/g, '<span class="pk">$1</span>')
+                .replace(/<pp>(.*?)<\/pp>/g, '<span class="pp">$1</span>');
+        }
+
+        function addLine(tpl, ln, active) {
+            const div = document.createElement('div');
+            div.className = 'cl' + (active ? ' active' : '');
+            div.dataset.ln = ln;
+            div.innerHTML = `<span class="lnum">${String(ln).padStart(2, ' ')}</span><span class="ct">${htmlLine(tpl)}</span>`;
+            codeLines.appendChild(div);
+            displayedLines.push(div);
+            while (displayedLines.length > MAX_LINES) {
+                displayedLines.shift().remove();
+            }
+        }
+
+        let codeQ = [], codeRunning = false;
+
+        function pushBlock(name, activeIdx) {
+            const block = BLOCKS[name];
+            if (!block) return;
+            block.forEach((entry, i) => {
+                codeQ.push({ tpl: entry[0], ln: entry[1], active: (i === (activeIdx ?? 0)) });
+            });
+            curFnEl.textContent = name + '()';
+            if (!codeRunning) drainQ();
+        }
+
+        function pushLine(name, idx) {
+            const entry = BLOCKS[name]?.[idx];
+            if (!entry) return;
+            codeQ.push({ tpl: entry[0], ln: entry[1], active: true });
+            if (!codeRunning) drainQ();
+        }
+
+        let codePaused = false;
+
+        function drainQ() {
+            if (codePaused) { codeRunning = false; return; }
+            if (codeQ.length === 0) { codeRunning = false; return; }
+            codeRunning = true;
+            const item = codeQ.shift();
+            // clear previous active
+            document.querySelectorAll('.cl.active').forEach(el => el.classList.remove('active'));
+            addLine(item.tpl, item.ln, item.active);
+            setTimeout(drainQ, 55);
+        }
+
+        function updateState() {
+            const set = (id, v) => {
+                // find in existing DOM first
+                const el = document.getElementById(id);
+                if (el) { el.textContent = v; return; }
+            };
+            // push state block fresh
+            pushBlock('state');
+            setTimeout(() => {
+                set('sv-y', Math.round(dino.y));
+                set('sv-vy', dino.vy.toFixed(1));
+                set('sv-grnd', onGround ? 'true' : 'false');
+                set('sv-spd', speed.toFixed(1));
+                set('sv-sc', Math.floor(score));
+                set('sv-obs', obstacles.length);
+            }, 0);
+        }
+
+        // ══════════════════════════════════
+        //  遊戲本體
+        // ══════════════════════════════════
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const scoreEl = document.getElementById('score');
+        const bestEl = document.getElementById('best');
+
+        const W = canvas.width, H = canvas.height;
+        const GROUND_Y = 160;
+        const GRAVITY = 0.6;
+        const JUMP_VY = -13;
+        const STAND_H = 38;  // 19格 × S=2
+        const DUCK_H = 26;  // 13格 × S=2
+        const DINO_W = 26;  // 碰撞寬
+
+        let dino, obstacles, speed, score, best = 0, running = false;
+        let onGround = true;
+        let frameCount = 0;
+        let nextSpawnAt = 80;
+        let groundOffset = 0;
+        let rafId = null;
+
+        // ── 像素藝術繪圖系統 ──
+        // 使用 px 單位，S = 每格像素大小
+        const S = 2; // 每格2px，整體放大
+
+        // 工具：填充矩形（以格為單位）
+        function px(x, y, w, h, color) {
+            ctx.fillStyle = color || '#535353';
+            ctx.fillRect(x * S, y * S, w * S, h * S);
+        }
+
+        // ── 繪製站立恐龍（以 ox,oy 為左上角偏移，單位 px）──
+        // 完整還原 Chrome T-Rex：頭、眼、嘴、身體、手臂、尾巴、兩腳
+        function drawDinoStand(ox, oy, frame, color) {
+            const C = color || '#535353';
+            const cx = (x, y, w, h) => { ctx.fillStyle = C; ctx.fillRect(ox + x * S, oy + y * S, w * S, h * S); };
+            const wh = '#f7f7f7'; // white (eye white)
+
+            // === 頭部 ===
+            cx(6, 0, 6, 1);   // 頭頂
+            cx(5, 1, 8, 1);
+            cx(4, 2, 9, 1);
+            cx(4, 3, 9, 1);
+            cx(4, 4, 10, 1);
+            cx(4, 5, 10, 1);
+            cx(4, 6, 9, 1);   // 下頜線
+            cx(4, 7, 5, 1);   // 嘴部空隙（留白）→ 只畫上下
+            cx(9, 7, 4, 1);   // 嘴巴後端
+
+            // === 眼睛（白色 + 黑瞳）===
+            ctx.fillStyle = wh;
+            ctx.fillRect(ox + 11 * S, oy + 2 * S, 2 * S, 2 * S); // 眼白
+            ctx.fillStyle = C;
+            ctx.fillRect(ox + 12 * S, oy + 2 * S, 1 * S, 1 * S); // 瞳孔
+
+            // === 脖子到身體 ===
+            cx(3, 8, 4, 1);
+            cx(2, 9, 5, 1);
+            cx(1, 10, 6, 1);
+            cx(1, 11, 7, 1);
+            cx(1, 12, 7, 1);
+            cx(1, 13, 6, 1);
+            cx(2, 14, 5, 1);
+
+            // === 身體主體 ===
+            cx(0, 9, 2, 1);  // 背部突出
+            cx(0, 10, 1, 1);
+            cx(2, 9, 6, 6);  // 軀幹大塊
+            cx(1, 10, 1, 4);  // 左邊緣
+
+            // === 短手臂（前肢）===
+            cx(8, 9, 3, 1);
+            cx(8, 10, 2, 1);
+
+            // === 尾巴 ===
+            cx(0, 13, 2, 1);
+            cx(0, 14, 1, 1);
+
+            // === 腳（跑步動畫：frame 0/1 交替）===
+            if (frame === 0) {
+                // 左腳前、右腳後
+                cx(3, 15, 2, 1);
+                cx(2, 16, 3, 1);
+                cx(2, 17, 3, 1);
+                cx(2, 18, 2, 1); // 左腳趾
+                cx(1, 18, 1, 1);
+
+                cx(5, 15, 2, 1);
+                cx(5, 16, 2, 1);
+                cx(5, 17, 2, 1);
+                cx(5, 18, 3, 1); // 右腳趾
+            } else {
+                // 右腳前、左腳後
+                cx(4, 15, 2, 1);
+                cx(4, 16, 3, 1);
+                cx(4, 17, 3, 1);
+                cx(4, 18, 3, 1); // 右腳趾
+
+                cx(2, 15, 2, 1);
+                cx(2, 16, 2, 1);
+                cx(2, 17, 2, 1);
+                cx(2, 18, 2, 1); // 左腳趾
+            }
+        }
+
+        // ── 蹲下形態 ──
+        function drawDinoDuck(ox, oy, frame, color) {
+            const C = color || '#535353';
+            const cx = (x, y, w, h) => { ctx.fillStyle = C; ctx.fillRect(ox + x * S, oy + y * S, w * S, h * S); };
+            const wh = '#f7f7f7';
+
+            // 頭（向前低）
+            cx(14, 0, 5, 1);
+            cx(13, 1, 7, 1);
+            cx(12, 2, 8, 1);
+            cx(12, 3, 9, 1);
+            cx(12, 4, 8, 1);
+            cx(12, 5, 5, 1);
+            cx(17, 5, 3, 1);
+
+            // 眼睛
+            ctx.fillStyle = wh;
+            ctx.fillRect(ox + 18 * S, oy + 1 * S, 2 * S, 2 * S);
+            ctx.fillStyle = C;
+            ctx.fillRect(ox + 19 * S, oy + 1 * S, 1 * S, 1 * S);
+
+            // 手臂
+            cx(16, 4, 2, 1);
+            cx(15, 5, 2, 1);
+
+            // 身體（扁平）
+            cx(3, 3, 9, 1);
+            cx(2, 4, 10, 1);
+            cx(1, 5, 11, 1);
+            cx(0, 6, 12, 1);
+            cx(1, 7, 11, 1);
+            cx(2, 8, 10, 1);
+            cx(3, 9, 8, 1);
+
+            // 尾巴
+            cx(0, 5, 1, 2);
+            cx(0, 7, 2, 1);
+
+            // 腳（蹲跑）
+            if (frame === 0) {
+                cx(4, 10, 2, 1); cx(3, 11, 3, 1); cx(3, 12, 3, 1);
+                cx(7, 9, 2, 1); cx(7, 10, 2, 1); cx(7, 11, 3, 1);
+            } else {
+                cx(6, 10, 2, 1); cx(5, 11, 3, 1); cx(5, 12, 3, 1);
+                cx(3, 9, 2, 1); cx(3, 10, 2, 1); cx(3, 11, 2, 1);
+            }
+        }
+
+        // ── 仙人掌 ──
+        function drawCactus(ox, oy, color) {
+            const C = color || '#535353';
+            const cx = (x, y, w, h) => { ctx.fillStyle = C; ctx.fillRect(ox + x * S, oy + y * S, w * S, h * S); };
+
+            // 主幹
+            cx(3, 0, 3, 20);
+            // 左臂
+            cx(0, 5, 3, 2);
+            cx(0, 3, 2, 5);
+            // 右臂
+            cx(6, 8, 3, 2);
+            cx(7, 6, 2, 5);
+        }
+
+        // ── 翼龍 (兩幀振翅) ──
+        function drawPtero(ox, oy, wingUp, color) {
+            const C = color || '#535353';
+            const cx = (x, y, w, h) => { ctx.fillStyle = C; ctx.fillRect(ox + x * S, oy + y * S, w * S, h * S); };
+            const wh = '#f7f7f7';
+
+            // 頭部
+            cx(14, 0, 3, 1);
+            cx(13, 1, 5, 2);
+            cx(12, 2, 6, 2);
+            cx(12, 3, 4, 1); cx(16, 3, 2, 1);
+
+            // 眼
+            ctx.fillStyle = wh;
+            ctx.fillRect(ox + 15 * S, oy + 1 * S, 2 * S, 2 * S);
+            ctx.fillStyle = C;
+            ctx.fillRect(ox + 16 * S, oy + 1 * S, 1 * S, 1 * S);
+
+            // 身體
+            cx(8, 3, 5, 1);
+            cx(7, 4, 6, 2);
+            cx(6, 5, 7, 2);
+            cx(7, 7, 5, 1);
+            cx(8, 8, 3, 1);
+
+            // 翅膀（依振翅幀）
+            if (wingUp) {
+                // 翅膀向上
+                cx(0, 0, 3, 1);
+                cx(0, 1, 5, 1);
+                cx(0, 2, 7, 2);
+                cx(1, 4, 6, 1);
+                cx(2, 5, 5, 1);
+                cx(3, 6, 4, 1);
+            } else {
+                // 翅膀向下
+                cx(2, 5, 5, 1);
+                cx(1, 6, 6, 1);
+                cx(0, 7, 7, 1);
+                cx(0, 8, 6, 1);
+                cx(1, 9, 4, 1);
+                cx(2, 10, 3, 1);
+            }
+
+            // 腳
+            cx(8, 9, 2, 1);
+            cx(9, 10, 2, 1);
+            cx(7, 9, 1, 1);
+            cx(6, 10, 1, 1);
+        }
+
+        // ── 程式碼關鍵字障礙物 ──
+        const KEYWORDS_GROUND = [
+            // 地面關鍵字（紅/橘色系，仿錯誤）
+            { word: 'undefined', color: '#f85149' },
+            { word: 'null', color: '#f85149' },
+            { word: 'NaN', color: '#ff7b72' },
+            { word: 'error', color: '#f85149' },
+            { word: 'catch', color: '#ffa657' },
+            { word: 'throw', color: '#ff7b72' },
+            { word: 'delete', color: '#f85149' },
+            { word: 'void', color: '#ffa657' },
+            { word: 'break', color: '#ff7b72' },
+            { word: 'typeof', color: '#ffa657' },
+        ];
+
+        const KEYWORDS_AIR = [
+            // 空中關鍵字（紫/藍色系，仿警告）
+            { word: 'while(true)', color: '#d2a8ff' },
+            { word: 'goto', color: '#79c0ff' },
+            { word: '∞ loop', color: '#d2a8ff' },
+            { word: 'overflow', color: '#79c0ff' },
+            { word: 'deprecated', color: '#d2a8ff' },
+            { word: 'SIGKILL', color: '#79c0ff' },
+            { word: '0xDEAD', color: '#d2a8ff' },
+            { word: 'segfault', color: '#79c0ff' },
+            { word: 'recursion', color: '#d2a8ff' },
+            { word: '404', color: '#79c0ff' },
+        ];
+
+        const FONT_SIZE = 15;
+        const FONT_FACE = `bold ${FONT_SIZE}px 'Fira Code', monospace`;
+
+        // 預先量測關鍵字寬度
+        function measureWord(word) {
+            ctx.font = FONT_FACE;
+            return ctx.measureText(word).width;
+        }
+
+        function drawKeyword(o) {
+            ctx.font = FONT_FACE;
+            ctx.fillStyle = o.color;
+            // 發光效果
+            ctx.fillText(o.word, o.x, o.y + FONT_SIZE);
+
+            // 底線（地面關鍵字加底線，像 IDE 紅波浪）
+            if (o.isGround) {
+                ctx.strokeStyle = o.color;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 2]);
+                ctx.beginPath();
+                ctx.moveTo(o.x, o.y + FONT_SIZE + 3);
+                ctx.lineTo(o.x + o.w, o.y + FONT_SIZE + 3);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+        function init() {
+            dino = {
+                x: 60, y: GROUND_Y - STAND_H,
+                w: DINO_W, h: STAND_H,
+                vy: 0, ducking: false,
+                frame: 0, frameTimer: 0,
+            };
+            obstacles = [];
+            speed = 5;
+            score = 0;
+            onGround = true;
+            frameCount = 0;
+            groundOffset = 0;
+            nextSpawnAt = 80 + Math.random() * 60;
+
+            pushBlock('init');
+            pushBlock('gameLoop');
+        }
+
+        // ── 跳躍 ──
+        function jump() {
+            if (!onGround) return;
+            dino.vy = JUMP_VY;
+            onGround = false;
+            dino.ducking = false;
+            dino.h = STAND_H;
+            pushBlock('jump');
+        }
+
+        // ── 蹲下 ──
+        function duckStart() {
+            if (onGround) {
+                dino.ducking = true;
+                dino.h = DUCK_H;
+                dino.y = GROUND_Y - DUCK_H;
+                pushLine('duck', 0);
+                pushLine('duck', 1);
+            }
+        }
+        function duckEnd() {
+            dino.ducking = false;
+            dino.h = STAND_H;
+            dino.y = GROUND_Y - STAND_H;
+        }
+
+        // ── 生成障礙物 ──
+        function spawnObstacle() {
+            const sc = Math.floor(score);
+
+            // 空中障礙機率
+            const pteroChance = sc < 100
+                ? 0.20 + (sc / 100) * 0.25
+                : sc < 200
+                    ? 0.45 + ((sc - 100) / 100) * 0.20
+                    : sc < 300
+                        ? 0.65 + ((sc - 200) / 100) * 0.10
+                        : 0.75;
+
+            const isAir = Math.random() < pteroChance;
+
+            // 挑選關鍵字
+            const pool = isAir ? KEYWORDS_AIR : KEYWORDS_GROUND;
+            const kw = pool[Math.floor(Math.random() * pool.length)];
+            const kwWord = kw.word;
+
+            // 量測實際文字寬度作為碰撞框
+            ctx.font = FONT_FACE;
+            const tw = ctx.measureText(kwWord).width;
+            const th = FONT_SIZE + 4; // 高度含底線
+
+            // 空中障礙飛行高度
+            let flyH = 0;
+            if (isAir) {
+                const heights = sc < 100 ? [85, 65, 40]
+                    : sc < 200 ? [65, 40, 40, 20]
+                        : sc < 400 ? [40, 20, 20, 20]
+                            : [20, 20, 20, 10];
+                flyH = heights[Math.floor(Math.random() * heights.length)];
+            }
+
+            obstacles.push({
+                x: W + 20,
+                y: isAir ? GROUND_Y - flyH - th : GROUND_Y - th - 2,
+                w: tw,
+                h: th,
+                word: kwWord,
+                color: kw.color,
+                isGround: !isAir,
+            });
+
+            // 雙地面關鍵字
+            const doubleCactusChance = sc < 150 ? 0 : sc < 300 ? 0.25 : sc < 500 ? 0.45 : 0.60;
+            if (!isAir && Math.random() < doubleCactusChance) {
+                const kw2 = KEYWORDS_GROUND[Math.floor(Math.random() * KEYWORDS_GROUND.length)];
+                const tw2 = ctx.measureText(kw2.word).width;
+                obstacles.push({
+                    x: W + 20 + tw + 10 + Math.random() * 10,
+                    y: GROUND_Y - th - 2,
+                    w: tw2,
+                    h: th,
+                    word: kw2.word,
+                    color: kw2.color,
+                    isGround: true,
+                });
+            }
+
+            // 間距
+            let minGap, maxGap;
+            if (sc < 150) {
+                const t = sc / 150;
+                minGap = Math.round(70 - t * 25);
+                maxGap = Math.round(110 - t * 40);
+            } else if (sc < 300) {
+                const t = (sc - 150) / 150;
+                minGap = Math.round(45 - t * 17);
+                maxGap = Math.round(70 - t * 25);
+            } else if (sc < 500) {
+                const t = (sc - 300) / 200;
+                minGap = Math.round(28 - t * 10);
+                maxGap = Math.round(45 - t * 15);
+            } else {
+                minGap = 14; maxGap = 22;
+            }
+
+            nextSpawnAt = frameCount + minGap + Math.random() * (maxGap - minGap);
+            pushBlock('spawnObstacle');
+        }
+
+        // ── 碰撞 ──
+        function overlaps(a, b) {
+            const margin = 5;
+            return (
+                a.x + margin < b.x + b.w - margin &&
+                a.x + a.w - margin > b.x + margin &&
+                a.y + margin < b.y + b.h - margin &&
+                a.y + a.h - margin > b.y + margin
+            );
+        }
+
+        // ── 主更新 ──
+        function update() {
+            frameCount++;
+
+            // 速度曲線：更陡峭的爬升
+            // 0→150分：5→11（快速起跳）
+            // 150→300分：11→16（高壓中段）
+            // 300→600分：16→22（近乎不可能）
+            // 600分+：22
+            if (score < 150) {
+                speed = 5 + (score / 150) * 6;
+            } else if (score < 300) {
+                speed = 11 + ((score - 150) / 150) * 5;
+            } else if (score < 600) {
+                speed = 16 + ((score - 300) / 300) * 6;
+            } else {
+                speed = 22;
+            }
+
+            // 重力隨速度大幅提高，跳躍窗口極短
+            const dynGravity = 0.6 + (speed - 5) * 0.055; // 0.6 → ~1.53
+
+            // 重力
+            if (!onGround) {
+                dino.vy += dynGravity;
+                dino.y += dino.vy;
+                if (dino.y >= GROUND_Y - dino.h) {
+                    dino.y = GROUND_Y - dino.h;
+                    dino.vy = 0;
+                    onGround = true;
+                }
+            }
+
+            // 地面滾動
+            groundOffset = (groundOffset + speed) % W;
+
+            // 移動障礙物
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= speed;
+                if (obstacles[i].x < -60) obstacles.splice(i, 1);
+            }
+
+            // 生成
+            if (frameCount >= nextSpawnAt) spawnObstacle();
+
+            // 分數
+            score += speed * 0.08;
+            scoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
+
+            // 碰撞
+            for (const o of obstacles) {
+                if (overlaps(dino, o)) {
+                    pushBlock('checkCollision', 2);
+                    pushBlock('gameOver');
+                    return doGameOver();
+                }
+            }
+
+            // 腳步動畫
+            dino.frameTimer++;
+            if (dino.frameTimer > 8) { dino.frame ^= 1; dino.frameTimer = 0; }
+        }
+
+        // ── 繪圖 ──
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // 地面
+            ctx.fillStyle = '#535353';
+            ctx.fillRect(0, GROUND_Y, W, 2);
+
+            // 地面紋理點
+            ctx.fillStyle = '#888';
+            for (let i = 0; i < 20; i++) {
+                const x = ((i * 67 + W - groundOffset) % W);
+                ctx.fillRect(x, GROUND_Y + 4, 3, 1);
+                ctx.fillRect((x + 20) % W, GROUND_Y + 7, 5, 1);
+            }
+
+            // 雲朵
+            ctx.fillStyle = '#ccc';
+            for (let i = 0; i < 3; i++) {
+                const cx = ((i * 220 + W * 1.5 - groundOffset * 0.3) % (W + 60)) - 30;
+                const cy = 20 + (i % 3) * 18;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, 30, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(cx - 16, cy + 4, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(cx + 16, cy + 4, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const COL = '#535353';
+
+            // 繪製恐龍
+            if (dino.ducking) {
+                drawDinoDuck(dino.x - 4, dino.y, dino.frame, COL);
+            } else {
+                drawDinoStand(dino.x, dino.y, onGround ? dino.frame : 0, COL);
+            }
+
+            // 繪製障礙物（程式碼關鍵字）
+            for (const o of obstacles) {
+                drawKeyword(o);
+            }
+        }
+
+        // ── 主循環 ──
+        function gameLoop() {
+            if (!running) return;
+            update();
+            draw();
+            if (frameCount % 30 === 0) {
+                pushBlock('moveObstacles');
+                pushBlock('update', 2);
+            }
+            if (frameCount % 50 === 0) updateState();
+            if (frameCount % 15 === 0) pushLine('draw', 1);
+            rafId = requestAnimationFrame(gameLoop);
+        }
+
+        function doGameOver() {
+            running = false;
+            cancelAnimationFrame(rafId);
+            draw();
+            const sc = Math.floor(score);
+            if (sc > best) {
+                best = sc;
+                bestEl.textContent = String(best).padStart(5, '0');
+            }
+
+            // ── 程式碼面板凍結 ──
+            codeQ = [];           // 清空待執行佇列
+            codePaused = true;    // 停止繼續 drainQ
+            codeRunning = false;
+
+            // 把最後 active 行改成紅色「錯誤」高亮
+            document.querySelectorAll('.cl.active').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('error');
+            });
+            // 更新底部狀態列
+            curFnEl.textContent = 'gameOver()';
+            document.getElementById('exec-badge').textContent = '■ STOP';
+            document.getElementById('exec-badge').style.color = '#f85149';
+            document.getElementById('exec-badge').style.background = '#2d1b1b';
+            document.getElementById('exec-badge').style.borderColor = '#6b2a2a';
+            document.getElementById('exec-badge').style.animation = 'none';
+
+            overlay.querySelector('h2').textContent = '💀 遊戲結束';
+            overlay.querySelector('p').innerHTML = `分數：${String(sc).padStart(5, '0')}<br>按空白鍵重新開始`;
+            overlay.style.display = 'flex';
+            document.getElementById('start-btn') && (document.getElementById('start-btn').textContent = '再玩一次');
+        }
+
+        function doGameOver() {
+            running = false;
+            cancelAnimationFrame(rafId);
+            draw();
+            const sc = Math.floor(score);
+            if (sc > best) {
+                best = sc;
+                bestEl.textContent = String(best).padStart(5, '0');
+            }
+
+            // ── 程式碼面板凍結 ──
+            codeQ = [];
+            codePaused = true;
+            codeRunning = false;
+
+            document.querySelectorAll('.cl.active').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('error');
+            });
+            curFnEl.textContent = 'gameOver()';
+            document.getElementById('exec-badge').textContent = '■ STOP';
+            document.getElementById('exec-badge').style.color = '#f85149';
+            document.getElementById('exec-badge').style.background = '#2d1b1b';
+            document.getElementById('exec-badge').style.borderColor = '#6b2a2a';
+            document.getElementById('exec-badge').style.animation = 'none';
+
+            overlay.querySelector('h2').textContent = '💀 遊戲結束';
+            overlay.querySelector('p').innerHTML = `分數：${String(sc).padStart(5, '0')}<br>按空白鍵繼續`;
+            overlay.style.display = 'flex';
+            document.getElementById('start-btn') && (document.getElementById('start-btn').textContent = '繼續');
+
+            gameState = 'dead';
+        }
+
+        // gameState: 'idle' | 'dead' | 'standby' | 'running'
+        let gameState = 'idle';
+
+        function enterStandby() {
+            // 顯示待命畫面：恐龍靜止，覆蓋層換成「準備好了！再按一下開始」
+            overlay.querySelector('h2').textContent = '準備好了！';
+            overlay.querySelector('p').innerHTML = '再按一次空白鍵開始';
+            const btn = document.getElementById('start-btn');
+            if (btn) btn.textContent = '開始';
+
+            // badge 換成等待狀態
+            const badge = document.getElementById('exec-badge');
+            badge.textContent = '… WAIT';
+            badge.style.color = '#ffa657';
+            badge.style.background = '#2a1f0a';
+            badge.style.borderColor = '#5a3a0a';
+            badge.style.animation = 'badge-blink 0.8s step-end infinite';
+
+            overlay.style.display = 'flex';
+            gameState = 'standby';
+        }
+
+        function startGame() {
+            overlay.style.display = 'none';
+            codeLines.innerHTML = '';
+            displayedLines = [];
+            codeQ = [];
+            codeRunning = false;
+            codePaused = false;
+            const badge = document.getElementById('exec-badge');
+            badge.textContent = '▶ RUN';
+            badge.style.color = '#3fb950';
+            badge.style.background = '#1a2a1a';
+            badge.style.borderColor = '#2a4a2a';
+            badge.style.animation = '';
+            document.querySelectorAll('.cl.error').forEach(el => el.classList.remove('error'));
+            init();
+            running = true;
+            gameState = 'running';
+            pushBlock('gameLoop');
+            gameLoop();
+        }
+
+        // ── 輸入 ──
+        let downPressed = false;
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (gameState === 'idle') { startGame(); return; }
+                if (gameState === 'dead') { enterStandby(); return; }
+                if (gameState === 'standby') { startGame(); return; }
+                // running
+                jump();
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (running) duckStart();
+            }
+        });
+        document.addEventListener('keyup', e => {
+            if (e.key === 'ArrowDown') duckEnd();
+        });
+
+        // 行動裝置觸控
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            if (gameState === 'idle') { startGame(); return; }
+            if (gameState === 'dead') { enterStandby(); return; }
+            if (gameState === 'standby') { startGame(); return; }
+            jump();
+        });
+
+        document.getElementById('start-btn').onclick = () => {
+            if (gameState === 'idle' || gameState === 'standby') startGame();
+            else if (gameState === 'dead') enterStandby();
+        };
+
+        // 初始畫面
+        ctx.fillStyle = '#f7f7f7';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#535353';
+        ctx.fillRect(0, GROUND_Y, W, 2);
+        drawDinoStand(60, GROUND_Y - STAND_H, 0, '#535353');
+    </script>
+</body>
+
+</html>
